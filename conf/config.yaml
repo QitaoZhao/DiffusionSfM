@@ -1,0 +1,84 @@
+training:
+  resume: False  # If True, must set hydra.run.dir accordingly
+  pretrain_path: ""
+  interval_visualize: 1000
+  interval_save_checkpoint: 5000
+  interval_delete_checkpoint: 10000
+  interval_evaluate: 5000
+  delete_all_checkpoints_after_training: False
+  lr: 1e-4
+  mixed_precision: True
+  matmul_precision: high 
+  max_iterations: 100000
+  batch_size: 64
+  num_workers: 8
+  gpu_id: 0
+  freeze_encoder: True
+  seed: 0
+  job_key: ""  # Use this for submitit sweeps where timestamps might collide
+  translation_scale: 1.0
+  regression: False
+  prob_unconditional: 0
+  load_extra_cameras: False
+  calculate_intrinsics: False
+  distort: False
+  debug_rays: False
+  normalize_first_camera: True
+  diffuse_origins_and_endpoints: True
+  diffuse_depths: False
+  depth_resolution: 1
+  dpt_head: False
+  full_num_patches_x: 16
+  full_num_patches_y: 16
+  dpt_encoder_features: True
+  nearest_neighbor: True
+  no_bg_targets: True
+  unit_normalize_scene: False
+  sd_scale: 2
+  bfloat: True
+  first_cam_mediod: True
+  gradient_clipping: False
+  l1_loss: False
+  grad_accumulation: False
+  reinit: False
+
+model:
+  pred_x0: True
+  model_type: dit
+  num_patches_x: 16
+  num_patches_y: 16
+  depth: 16
+  num_images: 1
+  random_num_images: True
+  feature_extractor: dino
+  append_ndc: True
+  within_image: False
+  use_homogeneous: True
+  freeze_transformer: False
+  cond_depth_mask: True
+
+noise_scheduler:
+  type: linear
+  max_timesteps: 100
+  beta_start: 0.0120
+  beta_end: 0.00085
+  marigold_ddim: False
+
+dataset:
+  name: co3d
+  shape: all_train
+  apply_augmentation: True
+  use_global_intrinsics: True
+  mask_holes: True
+  image_size: 224
+
+debug:
+  wandb: True
+  project_name: diffusionsfm
+  run_name: 
+  anomaly_detection: False
+
+hydra:
+  run:
+    dir: ./output/${now:%m%d_%H%M%S_%f}${training.job_key}
+  output_subdir: hydra
