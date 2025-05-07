@@ -9,6 +9,12 @@ This repository contains the official implementation for **DiffusionSfM: Predict
 
 - 2025.05.04: Initial code release.
 
+## Introduction
+
+**tl;dr** Given a set of multi-view images, **DiffusionSfM** represents scene geometry and cameras as pixel-wise ray origins and endpoints in a global frame. It learns a denoising diffusion model to infer these elements directly from multi-view inputs.
+
+![teaser](https://raw.githubusercontent.com/QitaoZhao/QitaoZhao.github.io/main/research/DiffusionSfM/figures/teaser.png)
+
 ## Install
 
 1. Clone DiffusionSfM:
@@ -55,6 +61,29 @@ Tested on:
 conda install mkl==2024.0  
 ```
 
+## Run Demo
+
+Download the model weights from [Google Drive](https://drive.google.com/file/d/1NBdq7A1QMFGhIbpK1HT3ATv2S1jXWr2h/view?usp=drive_link).
+
+```
+gdown https://drive.google.com/uc\?id\=1NBdq7A1QMFGhIbpK1HT3ATv2S1jXWr2h
+unzip models.zip
+```
+
+Set up the Gradio demo on your machine!
+
+```
+# first-time running may take a longer time
+python gradio_app.py
+```
+
+![teaser](assets/demo.png)
+
+You can run our model in two ways:
+
+1. **Upload Images** — Upload your own multi-view images above.
+2. **Use a Preprocessed Example** — Select one of the pre-collected examples below.
+
 ## Training
 
 Set up wandb:
@@ -68,6 +97,10 @@ See [docs/train.md](https://github.com/QitaoZhao/DiffusionSfM/blob/main/docs/tra
 ## Evaluation
 
 See [docs/eval.md](https://github.com/QitaoZhao/DiffusionSfM/blob/main/docs/eval.md) for instructions on how to run evaluation code.
+
+## Acknowledgments
+
+This project builds upon [RayDiffusion](https://github.com/jasonyzhang/RayDiffusion). [Amy Lin](https://amyxlase.github.io/) and [Jason Y. Zhang](https://jasonyzhang.com/) developed the initial codebase during the early stages of this project.
 
 ## Cite DiffusionSfM
 

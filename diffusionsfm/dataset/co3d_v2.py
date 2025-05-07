@@ -144,15 +144,43 @@ def square_bbox(bbox, padding=0.0, astype=None, tight=False):
     return square_bbox
 
 
-def unnormalize_image(image):
+def unnormalize_image(image, return_numpy=True, return_int=True):
     if isinstance(image, torch.Tensor):
-        image = image.cpu().numpy()
-    if image.shape[0] == 3:
-        image = image.transpose(1, 2, 0)
-    mean = np.array([0.485, 0.456, 0.406])
-    std = np.array([0.229, 0.224, 0.225])
+        image = image.detach().cpu().numpy()
+
+    if image.ndim == 3:
+        if image.shape[0] == 3:
+            image = image[None, ...]  
+        elif image.shape[2] == 3:
+            image = image.transpose(2, 0, 1)[None, ...]  
+        else:
+            raise ValueError(f"Unexpected image shape: {image.shape}")
+    elif image.ndim == 4:
+        if image.shape[1] == 3:
+            pass 
+        elif image.shape[3] == 3:
+            image = image.transpose(0, 3, 1, 2)
+        else:
+            raise ValueError(f"Unexpected batch image shape: {image.shape}")
+    else:
+        raise ValueError(f"Unsupported input shape: {image.shape}")
+
+    mean = np.array([0.485, 0.456, 0.406])[None, :, None, None]
+    std = np.array([0.229, 0.224, 0.225])[None, :, None, None]
     image = image * std + mean
-    return (image * 255.0).astype(np.uint8)
+
+    if return_int:
+        image = np.clip(image * 255.0, 0, 255).astype(np.uint8)
+    else:
+        image = np.clip(image, 0.0, 1.0)
+
+    if image.shape[0] == 1:
+        image = image[0]
+
+    if return_numpy:
+        return image
+    else:
+        return torch.from_numpy(image)
 
 
 def unnormalize_image_for_vis(image):
@@ -161,15 +189,6 @@ def unnormalize_image_for_vis(image):
     std = torch.tensor([0.229, 0.224, 0.225]).view(1, 1, 3, 1, 1).to(image.device)
     image = image * std + mean
     image = (image - 0.5) / 0.5
-    return image
-
-
-def unnormalize_image_for_inference(image):
-    assert len(image.shape) == 5 and image.shape[2] == 3
-    mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 1, 3, 1, 1).to(image.device)
-    std = torch.tensor([0.229, 0.224, 0.225]).view(1, 1, 3, 1, 1).to(image.device)
-    image = image * 0.5 + 0.5
-    image = (image - mean) / std
     return image
 
 

@@ -4,9 +4,11 @@ import io
 import ipdb  # noqa: F401
 import matplotlib.pyplot as plt
 import numpy as np
+import trimesh
 import torch
 import torchvision
 from pytorch3d.loss import chamfer_distance
+from scipy.spatial.transform import Rotation
 
 from diffusionsfm.inference.ddim import inference_ddim
 from diffusionsfm.utils.rays import (
@@ -406,3 +408,143 @@ def filter_and_align_point_clouds(
         pred_colors,
         [mse, cd, None],
     )
+
+
+def add_scene_cam(scene, c2w, edge_color, image=None, focal=None, imsize=None, screen_width=0.03):
+    OPENGL = np.array([
+        [1, 0, 0, 0],
+        [0, -1, 0, 0],
+        [0, 0, -1, 0],
+        [0, 0, 0, 1]
+    ])
+    
+    if image is not None:
+        H, W, THREE = image.shape
+        assert THREE == 3
+        if image.dtype != np.uint8:
+            image = np.uint8(255*image)
+    elif imsize is not None:
+        W, H = imsize
+    elif focal is not None:
+        H = W = focal / 1.1
+    else:
+        H = W = 1
+
+    if focal is None:
+        focal = min(H, W) * 1.1  # default value
+    elif isinstance(focal, np.ndarray):
+        focal = focal[0]
+
+    # create fake camera
+    height = focal * screen_width / H
+    width = screen_width * 0.5**0.5
+    rot45 = np.eye(4)
+    rot45[:3, :3] = Rotation.from_euler('z', np.deg2rad(45)).as_matrix()
+    rot45[2, 3] = -height  # set the tip of the cone = optical center
+    aspect_ratio = np.eye(4)
+    aspect_ratio[0, 0] = W/H
+    transform = c2w @ OPENGL @ aspect_ratio @ rot45
+    cam = trimesh.creation.cone(width, height, sections=4)
+
+    # this is the camera mesh
+    rot2 = np.eye(4)
+    rot2[:3, :3] = Rotation.from_euler('z', np.deg2rad(4)).as_matrix()
+    vertices = cam.vertices
+    vertices_offset = 0.9 * cam.vertices
+    vertices = np.r_[vertices, vertices_offset, geotrf(rot2, cam.vertices)]
+    vertices = geotrf(transform, vertices)
+    faces = []
+    for face in cam.faces:
+        if 0 in face:
+            continue
+        a, b, c = face
+        a2, b2, c2 = face + len(cam.vertices)
+
+        # add 3 pseudo-edges
+        faces.append((a, b, b2))
+        faces.append((a, a2, c))
+        faces.append((c2, b, c))
+
+        faces.append((a, b2, a2))
+        faces.append((a2, c, c2))
+        faces.append((c2, b2, b))
+
+    # no culling
+    faces += [(c, b, a) for a, b, c in faces]
+
+    for i,face in enumerate(cam.faces):
+        if 0 in face:
+            continue
+
+        if i == 1 or i == 5:
+            a, b, c = face
+            faces.append((a, b, c))
+
+    cam = trimesh.Trimesh(vertices=vertices, faces=faces)
+    cam.visual.face_colors[:, :3] = edge_color
+    
+    scene.add_geometry(cam)
+
+
+def geotrf(Trf, pts, ncol=None, norm=False):
+    """ Apply a geometric transformation to a list of 3-D points.
+
+    H: 3x3 or 4x4 projection matrix (typically a Homography)
+    p: numpy/torch/tuple of coordinates. Shape must be (...,2) or (...,3)
+
+    ncol: int. number of columns of the result (2 or 3)
+    norm: float. if != 0, the resut is projected on the z=norm plane.
+
+    Returns an array of projected 2d points.
+    """
+    assert Trf.ndim >= 2
+    if isinstance(Trf, np.ndarray):
+        pts = np.asarray(pts)
+    elif isinstance(Trf, torch.Tensor):
+        pts = torch.as_tensor(pts, dtype=Trf.dtype)
+
+    # adapt shape if necessary
+    output_reshape = pts.shape[:-1]
+    ncol = ncol or pts.shape[-1]
+
+    # optimized code
+    if (isinstance(Trf, torch.Tensor) and isinstance(pts, torch.Tensor) and
+            Trf.ndim == 3 and pts.ndim == 4):
+        d = pts.shape[3]
+        if Trf.shape[-1] == d:
+            pts = torch.einsum("bij, bhwj -> bhwi", Trf, pts)
+        elif Trf.shape[-1] == d+1:
+            pts = torch.einsum("bij, bhwj -> bhwi", Trf[:, :d, :d], pts) + Trf[:, None, None, :d, d]
+        else:
+            raise ValueError(f'bad shape, not ending with 3 or 4, for {pts.shape=}')
+    else:
+        if Trf.ndim >= 3:
+            n = Trf.ndim-2
+            assert Trf.shape[:n] == pts.shape[:n], 'batch size does not match'
+            Trf = Trf.reshape(-1, Trf.shape[-2], Trf.shape[-1])
+
+            if pts.ndim > Trf.ndim:
+                # Trf == (B,d,d) & pts == (B,H,W,d) --> (B, H*W, d)
+                pts = pts.reshape(Trf.shape[0], -1, pts.shape[-1])
+            elif pts.ndim == 2:
+                # Trf == (B,d,d) & pts == (B,d) --> (B, 1, d)
+                pts = pts[:, None, :]
+
+        if pts.shape[-1]+1 == Trf.shape[-1]:
+            Trf = Trf.swapaxes(-1, -2)  # transpose Trf
+            pts = pts @ Trf[..., :-1, :] + Trf[..., -1:, :]
+        elif pts.shape[-1] == Trf.shape[-1]:
+            Trf = Trf.swapaxes(-1, -2)  # transpose Trf
+            pts = pts @ Trf
+        else:
+            pts = Trf @ pts.T
+            if pts.ndim >= 2:
+                pts = pts.swapaxes(-1, -2)
+
+    if norm:
+        pts = pts / pts[..., -1:]  # DONT DO /= BECAUSE OF WEIRD PYTORCH BUG
+        if norm != 1:
+            pts *= norm
+
+    res = pts[..., :ncol].reshape(*output_reshape, ncol)
+    return res

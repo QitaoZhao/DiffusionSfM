@@ -22,7 +22,6 @@ training:
   load_extra_cameras: False
   calculate_intrinsics: False
   distort: False
-  debug_rays: False
   normalize_first_camera: True
   diffuse_origins_and_endpoints: True
   diffuse_depths: False

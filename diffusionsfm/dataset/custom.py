@@ -1,10 +1,13 @@
-import numpy as np
+
 import torch
-from PIL import Image
+import numpy as np
+import matplotlib.pyplot as plt
+
+from PIL import Image, ImageOps
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from diffusion.dataset.co3d_v2 import square_bbox
+from diffusionsfm.dataset.co3d_v2 import square_bbox
 
 
 class CustomDataset(Dataset):
@@ -15,7 +18,9 @@ class CustomDataset(Dataset):
         self.images = []
 
         for image_path in sorted(image_list):
-                self.images.append(Image.open(image_path).convert("RGB"))
+            img = Image.open(image_path)
+            img = ImageOps.exif_transpose(img).convert("RGB")  # Apply EXIF rotation
+            self.images.append(img)
 
         self.n = len(self.images)
         self.jitter_scale = [1, 1]
@@ -25,6 +30,11 @@ class CustomDataset(Dataset):
                 transforms.ToTensor(),
                 transforms.Resize(224),
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
+        self.transform_for_vis = transforms.Compose(
+            [
+                transforms.Resize(224),
             ]
         )
 
@@ -48,21 +58,28 @@ class CustomDataset(Dataset):
             )
         return image_crop
 
-    def __getitem__(self, index):
+    def __getitem__(self):
         return self.get_data()
 
     def get_data(self):
+        cmap = plt.get_cmap("hsv")
         ids = [i for i in range(len(self.images))]
         images = [self.images[i] for i in ids]
         images_transformed = []
+        images_for_vis = []
         crop_parameters = []
         
-        for _, image in enumerate(images):
+        for i, image in enumerate(images):
             bbox = np.array([0, 0, image.width, image.height])
-            bbox = square_bbox(bbox)
+            bbox = square_bbox(bbox, tight=True)
             bbox = np.around(bbox).astype(int)
             image = self._crop_image(image, bbox)
             images_transformed.append(self.transform(image))
+            image_for_vis = self.transform_for_vis(image)
+            color_float = cmap(i / len(images))
+            color_rgb = tuple(int(255 * c) for c in color_float[:3])
+            image_for_vis = ImageOps.expand(image_for_vis, border=3, fill=color_rgb)
+            images_for_vis.append(image_for_vis)
 
             width, height = image.size
             length = max(width, height)
@@ -79,6 +96,7 @@ class CustomDataset(Dataset):
 
         batch = {}
         batch["image"] = torch.stack(images)
+        batch["image_for_vis"] = images_for_vis
         batch["n"] = len(images)
         batch["ind"] = torch.tensor(ids),
         batch["crop_parameters"] = torch.stack(crop_parameters)

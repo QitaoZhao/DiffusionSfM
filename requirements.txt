@@ -27,3 +27,6 @@ pandas
 wandb
 submitit
 accelerate==0.32.1
+gradio==4.44.1
+pydantic==2.10.6
+gdown

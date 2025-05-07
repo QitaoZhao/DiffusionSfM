@@ -75,7 +75,6 @@ def load_model(
             depth_resolution=cfg.training.get("depth_resolution", 1),
             encoder_features=cfg.training.get("dpt_encoder_features", False),
             use_homogeneous=cfg.model.get("use_homogeneous", False),
-            regression=cfg.training.get("regression", False),
             cond_depth_mask=cfg.model.get("cond_depth_mask", False),
         ).to(device)
 
