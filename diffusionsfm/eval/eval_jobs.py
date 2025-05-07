@@ -67,6 +67,9 @@ def evaluate_diffusionsfm(eval_path, use_submitit, mode):
 
 
 def process_predictions(eval_path, pred_index, checkpoint=800_000, threshold_R=15, threshold_CC=0.1):
+    """
+    pred_index should be 1 (corresponding to T=90)
+    """
     def aggregate_per_category(categories, metric_key, num_images, sample_num, threshold=None):
         """
         Aggregates one metric over all data points in a prediction file and then across categories.
@@ -168,5 +171,5 @@ if __name__ == "__main__":
     use_submitit = args.use_submitit
     mode = args.mode
 
-    # evaluate_diffusionsfm(eval_path, use_submitit, mode)
-    process_predictions(eval_path, 2)
+    evaluate_diffusionsfm(eval_path, use_submitit, mode)
+    process_predictions(eval_path, 1)
