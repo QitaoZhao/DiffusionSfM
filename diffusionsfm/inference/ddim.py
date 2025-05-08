@@ -14,9 +14,11 @@ def inference_ddim(
     eta=0,
     num_inference_steps=100,
     pbar=True,
+    stop_iteration=None,
     num_patches_x=16,
     num_patches_y=16,
     visualize=False,
+    max_num_images=8,
     seed=0,
 ):
     """
@@ -78,7 +80,12 @@ def inference_ddim(
         else:
             ndc_coordinates = None
 
-        loop = tqdm(range(len(timesteps))) if pbar else range(len(timesteps))
+        if stop_iteration is None:
+            loop = range(len(timesteps))
+        else:
+            loop = range(len(timesteps) - stop_iteration + 1)
+        loop = tqdm(loop) if pbar else loop
+
         for t in loop:
             tau = timesteps[t]
 
@@ -106,12 +113,41 @@ def inference_ddim(
                 * torch.sqrt(1 - alpha / alpha_prev)
             )
 
-            eps_pred, noise_sample = model(
-                features=image_features,
-                rays_noisy=x_tau,
-                t=int(tau),
-                ndc_coordinates=ndc_coordinates,
-            )
+            if num_images > max_num_images:
+                eps_pred = torch.zeros_like(x_tau)
+                noise_sample = torch.zeros_like(x_tau)
+
+                # Randomly split image indices (excluding index 0), then prepend 0 to each split
+                indices_split = torch.split(
+                    torch.randperm(num_images - 1) + 1, max_num_images - 1
+                )
+
+                for indices in indices_split:
+                    indices = torch.cat((torch.tensor([0]), indices))  # Ensure index 0 is always included
+
+                    eps_pred_ind, noise_sample_ind = model(
+                        features=image_features[:, indices],
+                        rays_noisy=x_tau[:, indices],
+                        t=int(tau),
+                        ndc_coordinates=ndc_coordinates[:, indices],
+                        indices=indices,
+                    )
+
+                    eps_pred[:, indices] += eps_pred_ind
+
+                    if noise_sample_ind is not None:
+                        noise_sample[:, indices] += noise_sample_ind
+
+                # Average over splits for the shared reference index (0)
+                eps_pred[:, 0] /= len(indices_split)
+                noise_sample[:, 0] /= len(indices_split)
+            else:
+                eps_pred, noise_sample = model(
+                    features=image_features,
+                    rays_noisy=x_tau,
+                    t=int(tau),
+                    ndc_coordinates=ndc_coordinates,
+                )
                 
             if model.use_homogeneous:
                 p1 = eps_pred[:, :, :4]

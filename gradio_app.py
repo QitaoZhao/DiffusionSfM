@@ -79,14 +79,14 @@ def run_inference(args, cfg, model, batch):
     images = batch["image"].to(device)
     crop_parameters = batch["crop_parameters"].to(device)
 
-    _, additional_cams = predict_cameras(
+    (pred_cameras, pred_rays), _ = predict_cameras(
         model=model,
         images=images,
         device=device,
         crop_parameters=crop_parameters,
+        stop_iteration=90,
         num_patches_x=cfg.training.full_num_patches_x,
         num_patches_y=cfg.training.full_num_patches_y,
-        additional_timesteps=list(range(11)),
         calculate_intrinsics=True,
         max_num_images=8,
         mode="segment",
@@ -94,7 +94,6 @@ def run_inference(args, cfg, model, batch):
         use_homogeneous=True,
         seed=0,
     )
-    pred_cameras, pred_rays = additional_cams[10]
 
     # Unnormalize and resize input images
     images = unnormalize_image(images, return_numpy=False, return_int=False)
@@ -142,7 +141,7 @@ if __name__ == "__main__":
     _DESCRIPTION = """
     <div>
     <a style="display:inline-block" href="https://qitaozhao.github.io/DiffusionSfM"><img src='https://img.shields.io/badge/public_website-8A2BE2'></a>
-    <a style="display:inline-block; margin-left: .5em" href='https://github.com/QitaoZhao/SparseAGS'><img src='https://img.shields.io/github/stars/QitaoZhao/SparseAGS?style=social'/></a>
+    <a style="display:inline-block; margin-left: .5em" href='https://github.com/QitaoZhao/DiffusionSfM'><img src='https://img.shields.io/github/stars/QitaoZhao/DiffusionSfM?style=social'/></a>
     </div>
     DiffusionSfM learns to predict scene geometry and camera poses as pixel-wise ray origins and endpoints using a denoising diffusion model.
     """
@@ -205,7 +204,7 @@ if __name__ == "__main__":
                     height=520,
                     zoom_speed=0.5,
                     pan_speed=0.5,
-                    label="3D Point Cloud and Cameras"
+                    label="3D Point Clouds and Recovered Cameras"
                 )
 
         # Link image gallery selection
