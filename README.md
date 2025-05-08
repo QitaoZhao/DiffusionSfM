@@ -63,16 +63,20 @@ conda install mkl==2024.0
 
 ## Run Demo
 
-Download the model weights from [Google Drive](https://drive.google.com/file/d/1NBdq7A1QMFGhIbpK1HT3ATv2S1jXWr2h/view?usp=drive_link).
+#### (1) Try the Online Demo
+
+Check out our interactive demo on Hugging Face:  
+
+👉 [DiffusionSfM Demo](https://huggingface.co/spaces/qitaoz/DiffusionSfM)
+
+#### (2) Run the Gradio Demo Locally
+
+Download the model weights manually from [Google Drive](https://drive.google.com/file/d/1NBdq7A1QMFGhIbpK1HT3ATv2S1jXWr2h/view?usp=drive_link), or run the following commands:
 
 ```
 gdown https://drive.google.com/uc\?id\=1NBdq7A1QMFGhIbpK1HT3ATv2S1jXWr2h
 unzip models.zip
-```
 
-Set up the Gradio demo on your machine!
-
-```
 # first-time running may take a longer time
 python gradio_app.py
 ```
