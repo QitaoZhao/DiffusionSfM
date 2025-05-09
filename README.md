@@ -3,7 +3,7 @@
 This repository contains the official implementation for **DiffusionSfM: Predicting Structure and Motion**
 **via Ray Origin and Endpoint Diffusion**. The paper has been accepted to [CVPR 2025](https://cvpr.thecvf.com/Conferences/2025).
 
-[Project Page](https://qitaozhao.github.io/DiffusionSfM) | arXiv (Coming Soon) | <a href='https://huggingface.co/spaces/qitaoz/DiffusionSfM'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Demo-blue'></a>
+[Project Page](https://qitaozhao.github.io/DiffusionSfM) | [arXiv](https://arxiv.org/abs/2505.05473) | <a href='https://huggingface.co/spaces/qitaoz/DiffusionSfM'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Demo-blue'></a>
 
 ### News
 
