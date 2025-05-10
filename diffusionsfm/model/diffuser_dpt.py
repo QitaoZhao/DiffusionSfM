@@ -8,6 +8,8 @@ from diffusionsfm.model.feature_extractors import PretrainedVAE, SpatialDino
 from diffusionsfm.model.blocks import _make_fusion_block, _make_scratch
 from diffusionsfm.model.scheduler import NoiseScheduler
 
+from huggingface_hub import PyTorchModelHubMixin
+
 
 # functional implementation
 def nearest_neighbor_upsample(x: torch.Tensor, scale_factor: int):
@@ -35,7 +37,11 @@ class ProjectReadout(nn.Module):
         return self.project(features)
 
 
-class RayDiffuserDPT(nn.Module):
+class RayDiffuserDPT(nn.Module, PyTorchModelHubMixin,
+                        repo_url="https://github.com/QitaoZhao/DiffusionSfM",
+                        paper_url="https://huggingface.co/papers/2505.05473",
+                        pipeline_tag="image-to-3d",
+                        license="mit"):
     def __init__(
         self,
         model_type="dit",

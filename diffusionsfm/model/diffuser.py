@@ -7,8 +7,14 @@ from diffusionsfm.model.dit import DiT
 from diffusionsfm.model.feature_extractors import PretrainedVAE, SpatialDino
 from diffusionsfm.model.scheduler import NoiseScheduler
 
+from huggingface_hub import PyTorchModelHubMixin
 
-class RayDiffuser(nn.Module):
+
+class RayDiffuser(nn.Module, PyTorchModelHubMixin,
+                  repo_url="https://github.com/QitaoZhao/DiffusionSfM",
+                  paper_url="https://huggingface.co/papers/2505.05473",
+                  pipeline_tag="image-to-3d",
+                  license="mit"):
     def __init__(
         self,
         model_type="dit",
