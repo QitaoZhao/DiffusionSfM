@@ -82,7 +82,7 @@ filepath = hf_hub_download(repo_id="qitaoz/DiffusionSfM", filename="qitaoz/Diffu
 or [Google Drive](https://drive.google.com/file/d/1NBdq7A1QMFGhIbpK1HT3ATv2S1jXWr2h/view?usp=drive_link):
 
 ```bash
-gdown https://drive.google.com/uc\?id\=1NBdq7A1QMFGhIbpK1HT3ATv2S1jXWr2h
+gdown https://drive.google.com/uc\?id\=15nCFDLtpS0GC3QUo81RPmAxB4EQv7S8q
 unzip models.zip
 ```
 Next run the demo like so:
