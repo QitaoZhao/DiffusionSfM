@@ -79,7 +79,7 @@ from huggingface_hub import hf_hub_download
 filepath = hf_hub_download(repo_id="qitaoz/DiffusionSfM", filename="qitaoz/DiffusionSfM")
 ```
 
-or [Google Drive](https://drive.google.com/file/d/1NBdq7A1QMFGhIbpK1HT3ATv2S1jXWr2h/view?usp=drive_link):
+or [Google Drive](https://drive.google.com/file/d/15nCFDLtpS0GC3QUo81RPmAxB4EQv7S8q/view?usp=drive_link):
 
 ```bash
 gdown https://drive.google.com/uc\?id\=15nCFDLtpS0GC3QUo81RPmAxB4EQv7S8q
